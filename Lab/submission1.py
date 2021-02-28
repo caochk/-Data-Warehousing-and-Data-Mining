@@ -82,16 +82,15 @@ def make_tree(tokens): # do not change the heading of the function
             i += 1
     return root
 
-def findDepth(root, i):
-    if len(root.children) > 0:
-        i += 1
-        for child in root.children:
-            if len(child.children) > 0:
-                i += 1
-                findDepth(child, i)
-    return i
 
 def max_depth(root): # do not change the heading of the function
-    i = 1
-    depth = findDepth(root, i)
-    return depth
+    if len(root.children) == 0:
+        return 1
+    else:
+        depth = 1
+        depthList = []
+        for child in root.children:
+            depth += max_depth(child)
+            depthList.append(depth)
+            depth = 1
+        return max(depthList)
