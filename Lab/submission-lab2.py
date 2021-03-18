@@ -1,91 +1,75 @@
-## import modules here 
+## import modules here
 import pandas as pd
 import numpy as np
 import helper
 
 
 ################### Question 1 ###################
-def read_data(filename):
-    baseCuboid = pd.read_csv(filename, sep='\t')
-    return (baseCuboid)
-
-
-def buc_rec_optimized(df):# do not change the heading of the function
-    # baseCuboid = df
-    if df.shape[0] == 1:
-        # print(df)
-        single_tuple_optimization(df)
-    else:
-        row = []
-        index = []
-        columns = list(baseCuboid.iloc[:, :])
-        resultCuboid = pd.DataFrame(columns=columns)
-        buc_rec_optimization(df, row, index, resultCuboid)
-        # print(resultCuboid)
-
-
-def single_tuple_optimization(baseCuboid):
-    # print(baseCuboid)
-    base = list(baseCuboid.iloc[0, 0:-1])
-    # print(base)
-    columns = list(baseCuboid.iloc[:, 0:-1])
-    # print(columns)
+def buc_rec_optimized(df):  # do not change the heading of the function
+    columns = df.columns
     resultCuboid = pd.DataFrame(columns=columns)
-    # print(resultCuboid)
-    resultCuboid.loc['0'] = base
-    # print(resultCuboid)
-    lastRow = []
-    for i in range(len(base)):
-        lastRow.append('ALL')
-    # print(lastRow)
+    buc_rec_optimization(df, [], [], resultCuboid)
+    return resultCuboid
 
-    rows = [base]
-    row = []
-    rowTmp = []
-    i, j, k, l = 0, 0, 0, 0
-    index = 1
-    while lastRow not in rows:
-        while i < len(rows):
-            length = len(rows)
+def single_tuple_optimization(originalCuboid, originalRow, index, resultCuboid):
+    if originalCuboid.shape[1] == 1:
+        originalRow.append(originalCuboid.iloc[0, 0])
+        resultCuboid.loc[len(index)] = originalRow
+        originalRow.pop()
+    else:
+        originalRowTmp = originalRow.copy()
+        base = list(originalCuboid.iloc[0, :])
+        originalRowTmp.extend(base)
+        resultCuboid.loc[len(index)] = originalRowTmp
+        lastRow = []
+        for i in range(len(base) - 1):
+            lastRow.append('ALL')
+        lastRow.append(originalCuboid.iloc[0, -1])
 
-            for k in range(len(rows[i])): #深拷贝过程
-                row.append(rows[i][k])
+        rows = [base]
+        row = []
+        rowTmp = []
+        originalRowTmp = originalRow.copy()
+        i, j, k, l = 0, 0, 0, 0
+        # index = 1
+        index.append(1)
+        while lastRow not in rows:
+            while i < len(rows):
+                length = len(rows)
 
-            for j in range(len(base)):
-                if row[j] != 'ALL':
+                for k in range(len(rows[i])):  # deep copy
+                    row.append(rows[i][k])
 
-                    for l in range(len(row)): #深拷贝过程
-                        rowTmp.append(row[l])
+                for j in range(len(base) - 1):
+                    if row[j] != 'ALL':
 
-                    rowTmp[j] = 'ALL'
-                    if rowTmp not in rows:
-                        resultCuboid.loc[str(index)] = rowTmp
-                        rows.append(rowTmp)
-                        index += 1
-                rowTmp = []
-            row = []
-            # print(i, ",")
-            i += 1
+                        for l in range(len(row)):  # deep copy
+                            rowTmp.append(row[l])
 
-    # print(rows)
-    # print(resultCuboid)
-    # print(len(baseCuboid.columns))
+                        rowTmp[j] = 'ALL'
+                        if rowTmp not in rows:
+                            originalRowTmp.extend(rowTmp)
+                            resultCuboid.loc[len(index)] = originalRowTmp
+                            rows.append(rowTmp)
+                            index.append(1)
+                    rowTmp = []
+                    originalRowTmp = originalRow.copy()
+                row = []
+                i += 1
+        index.pop()
 
-    resultCuboid[baseCuboid.columns[-1]] = baseCuboid.iloc[0, -1]
-    # print(resultCuboid)
-
-def base_case(originalCuboid, row, index, resultCuboid):
-    sumOfMeasureValues = originalCuboid.iloc[:, 0].sum()
-    row.append(sumOfMeasureValues)
-    resultCuboid.loc[str(len(index))] = row
 
 def buc_rec_optimization(originalCuboid, row, index, resultCuboid):
-    if len(originalCuboid.columns) == 1:
-        base_case(originalCuboid, row, index, resultCuboid)
+    if originalCuboid.shape[0] == 1:
+        single_tuple_optimization(originalCuboid, row, index, resultCuboid)
+
+    elif originalCuboid.shape[1] == 1:
+        sumOfMeasureValues = sum(helper.project_data(originalCuboid, 0))
+        row.append(sumOfMeasureValues)
+        resultCuboid.loc[len(index)] = row
         row.pop()
     else:
-        firstDimValus = set(originalCuboid.iloc[:, 0])
-
+        firstDimValus = sorted(list(set(helper.project_data(originalCuboid, 0).values)))
         for value in firstDimValus:
             row.append(value)
             subCuboid = helper.slice_data_dim0(originalCuboid, value)
@@ -97,8 +81,4 @@ def buc_rec_optimization(originalCuboid, row, index, resultCuboid):
         subCuboid = helper.remove_first_dim(originalCuboid)
         buc_rec_optimization(subCuboid, row, index, resultCuboid)
         row.pop()
-        # index.append(1)
 
-
-baseCuboid = read_data('a_.txt')
-buc_rec_optimized(baseCuboid)
